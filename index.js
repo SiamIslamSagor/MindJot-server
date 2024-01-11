@@ -30,13 +30,15 @@ async function run() {
     //           all collection        //
     /////////////////////////////////////
 
-    const taskCollection = client.db("MindJotDB").collection("task");
+    const taskCollection = client.db("MindJotDB").collection("tasks");
 
     /////////////////////////////////////
     //           Task api              //
     /////////////////////////////////////
-    app.get("/all-task", async (req, res) => {
-      const result = await taskCollection.find().toArray();
+    app.get("/all-task/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await taskCollection.find(query).toArray();
       res.send(result);
     });
 
