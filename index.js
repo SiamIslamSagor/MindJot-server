@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -37,9 +37,19 @@ async function run() {
     /////////////////////////////////////
     app.get("/all-task/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { email };
+      const query = { email: email };
+      console.log(query);
       const result = await taskCollection.find(query).toArray();
+      console.log(result);
       res.send(result);
+    });
+
+    app.patch("/update-task/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      console.log(`id is: ${id} and data is: ${updateInfo}`);
+      const query = { _id: new ObjectId(id) };
+      res.send({ message: "you successfully hit update api" });
     });
 
     await client.db("admin").command({ ping: 1 });
