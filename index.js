@@ -38,20 +38,91 @@ async function run() {
     app.get("/all-task/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
-      console.log(query);
+      // console.log(query);
       const result = await taskCollection.find(query).toArray();
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
     app.patch("/update-task/:id", async (req, res) => {
       const id = req.params.id;
-      const updateInfo = req.body;
-      console.log(`id is: ${id} and data is: ${updateInfo}`);
-      const query = { _id: new ObjectId(id) };
-      res.send({ message: "you successfully hit update api" });
+      const { updatedInfo } = req.body;
+      console.log(updatedInfo);
+      console.log(`id is: ${id} and data is: ${updatedInfo}`);
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: updatedInfo,
+      };
+      const result = await taskCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     });
 
+    /* app.patch("/update-task/:id", async (req, res) => {
+      const taskId = req.params.id;
+      const { updatedInfo } = req.body;
+      console.log(updatedInfo);
+
+      try {
+        // First Task: Update the task with _id
+        await taskCollection.updateOne(
+          { _id: new ObjectId(taskId) },
+          {
+            $set: {
+              status: updatedInfo.destinationStatus,
+              index: updatedInfo.destinationIndex,
+            },
+          }
+        );
+
+        // Find tasks with sourceStatus and index greater than sourceIndex
+        const sourceTasks = await taskCollection
+          .find({
+            status: updatedInfo.sourceStatus,
+            index: { $gt: updatedInfo.sourceIndex },
+          })
+          .toArray();
+        console.log("sourceTasks:", sourceTasks);
+
+        // Update their indices to decrease by 1
+        for (const sourceTask of sourceTasks) {
+          // Check if the 'index' field is numeric before applying $inc
+          console.log(
+            'typeof sourceTask.index === "number"',
+            typeof sourceTask.index === "number"
+          );
+          if (typeof sourceTask.index === "number") {
+            await taskCollection.updateOne(
+              { _id: sourceTask._id },
+              { $inc: { index: -1 } }
+            );
+          }
+        }
+
+        // Second Task: Find tasks with destinationStatus
+        const destinationTasks = await taskCollection
+          .find({ status: updatedInfo.destinationStatus })
+          .toArray();
+
+        // Update their indices to increase by 1
+        for (const destinationTask of destinationTasks) {
+          // Check if the 'index' field is numeric before applying $inc
+          if (typeof destinationTask.index === "number") {
+            await taskCollection.updateOne(
+              { _id: destinationTask._id },
+              { $inc: { index: 1 } }
+            );
+          }
+        }
+
+        res.json({ success: true, message: "Tasks updated successfully" });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ success: false, message: "Internal Server Error" });
+      }
+    });
+ */
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
