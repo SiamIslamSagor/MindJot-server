@@ -30,32 +30,137 @@ async function run() {
     //           all collection        //
     /////////////////////////////////////
 
-    const taskCollection = client.db("MindJotDB").collection("tasks");
+    // const taskCollection = client.db("MindJotDB").collection("tasks");
+    const taskCollection = client.db("MindJotDB").collection("task");
 
     /////////////////////////////////////
     //           Task api              //
     /////////////////////////////////////
     app.get("/all-task/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { email: email };
-      // console.log(query);
+      // const query = { email: email };
+      const query = { email: email, status: "completed" };
       const result = await taskCollection.find(query).toArray();
-      // console.log(result);
       res.send(result);
     });
 
     app.patch("/update-task/:id", async (req, res) => {
+      try {
+        const { updatedInfo } = req.body;
+        const id = req.params.id;
+
+        // First task: Update the task with the specified _id
+        const updatedTask = await taskCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              status: updatedInfo.destinationStatus,
+              index: updatedInfo.destinationIndex,
+            },
+          }
+        );
+
+        // Second task: Adjust indexes for sourceStatus and destinationStatus
+        await Promise.all([
+          // Update indexes for sourceStatus
+          taskCollection.updateMany(
+            {
+              status: updatedInfo.sourceStatus,
+              index: { $gt: updatedInfo.sourceIndex },
+            },
+            { $inc: { index: -1 } }
+          ),
+          // Update indexes for destinationStatus
+          taskCollection.updateMany(
+            {
+              status: updatedInfo.destinationStatus,
+              index: { $gte: updatedInfo.destinationIndex },
+            },
+            { $inc: { index: 1 } }
+          ),
+        ]);
+
+        res.json({ message: "Task updated successfully" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error updating task" });
+      }
+    });
+
+    /* app.patch("/update-task/:id", async (req, res) => {
       const id = req.params.id;
       const { updatedInfo } = req.body;
-      console.log(updatedInfo);
+      // console.log(updatedInfo);
       console.log(`id is: ${id} and data is: ${updatedInfo}`);
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
-        $set: updatedInfo,
+        $set: {
+          status: updatedInfo.destinationStatus,
+          index: updatedInfo.destinationIndex,
+        },
       };
       const result = await taskCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+
+    app.patch("/update-sourceTask/:id", async (req, res) => {
+      const { updatedInfo } = req.body;
+      const query = {
+        status: updatedInfo.sourceStatus,
+        index: { $gt: updatedInfo.sourceIndex },
+      };
+      const targetedTasks = await taskCollection.find(query).toArray();
+      // console.log("targetedTask:", targetedTasks);
+
+      for (const targetedTask of targetedTasks) {
+        console.log(targetedTask);
+        await taskCollection.updateOne(
+          { _id: targetedTask._id },
+          { $set: { index: targetedTask.index - 1 } }
+        );
+      }
+      res.send({ success: true, message: "sourceTask updated successfully" });
+    });
+
+    app.patch("/update-destinationTask/:id", async (req, res) => {
+      const { updatedInfo } = req.body;
+      const query = {
+        status: updatedInfo.destinationStatus,
+        index: { $gt: updatedInfo.destinationIndex },
+      };
+      const targetedTasks = await taskCollection.find(query).toArray();
+      console.log("destinationTask targetedTask:", targetedTasks);
+
+      //  for (const targetedTask of targetedTasks) {
+      //   console.log(targetedTask);
+      //   await taskCollection.updateOne(
+      //     { _id: targetedTask._id },
+      //     { $set: { index: targetedTask?.index + 1 } }
+      //   );
+      // }
+      res.send({
+        success: true,
+        message: "destinationTask updated successfully",
+      });
+    }); */
+
+    // app.patch("/update-sourceTask/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const { updatedInfo } = req.body;
+    //   const query = {
+    //     status: updatedInfo.sourceStatus,
+    //     index: { $gt: updatedInfo.sourceIndex },
+    //   };
+    //   const targetedTasks = await taskCollection.find(query).toArray();
+    //   // console.log("targetedTask:", targetedTasks);
+    //   for (const targetedTask of targetedTasks) {
+    //     console.log(targetedTask);
+    //     await taskCollection.updateOne(
+    //       { _id: targetedTask._id },
+    //       { $set: { index: targetedTask.index - 1 } }
+    //     );
+    //   }
+    // });
 
     /* app.patch("/update-task/:id", async (req, res) => {
       const taskId = req.params.id;
