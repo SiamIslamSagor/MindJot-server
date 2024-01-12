@@ -38,13 +38,13 @@ async function run() {
     /////////////////////////////////////
     app.get("/all-task/:email", async (req, res) => {
       const email = req.params.email;
-      // const query = { email: email };
-      const query = { email: email, status: "completed" };
+      const query = { email: email };
+      // const query = { email: email, status: "completed" };
       const result = await taskCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.patch("/update-task/:id", async (req, res) => {
+    /* app.patch("/update-task/:id", async (req, res) => {
       try {
         const { updatedInfo } = req.body;
         const id = req.params.id;
@@ -85,25 +85,23 @@ async function run() {
         console.error(err);
         res.status(500).json({ message: "Error updating task" });
       }
-    });
+    }); */
 
-    /* app.patch("/update-task/:id", async (req, res) => {
+    app.patch("/update-task/:id", async (req, res) => {
       const id = req.params.id;
       const { updatedInfo } = req.body;
-      // console.log(updatedInfo);
       console.log(`id is: ${id} and data is: ${updatedInfo}`);
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
           status: updatedInfo.destinationStatus,
-          index: updatedInfo.destinationIndex,
         },
       };
       const result = await taskCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
 
-    app.patch("/update-sourceTask/:id", async (req, res) => {
+    /* app.patch("/update-sourceTask/:id", async (req, res) => {
       const { updatedInfo } = req.body;
       const query = {
         status: updatedInfo.sourceStatus,
@@ -121,7 +119,6 @@ async function run() {
       }
       res.send({ success: true, message: "sourceTask updated successfully" });
     });
-
     app.patch("/update-destinationTask/:id", async (req, res) => {
       const { updatedInfo } = req.body;
       const query = {
